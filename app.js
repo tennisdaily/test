@@ -210,6 +210,20 @@ function openArticle(id, updateHistory = true) {
     translateBtn.innerHTML = `<i class="fa-solid fa-language text-sm"></i> <span id="translate-btn-text">Translate to EN</span>`;
     translateBtn.onclick = function() { toggleArticleTranslation(); };
 
+    // --- INTEGRATION BOUTON MODIFIER POUR ADMIN ---
+    let editBtn = document.getElementById('btn-edit-article');
+    if (editBtn) editBtn.remove();
+
+    if (isAdmin) {
+        const headerContainer = document.getElementById('read-category').parentElement;
+        editBtn = document.createElement('button');
+        editBtn.id = 'btn-edit-article';
+        editBtn.className = "ml-3 bg-amber-500 hover:bg-amber-600 text-white px-2.5 py-1 rounded text-xs font-bold transition flex items-center gap-1";
+        editBtn.innerHTML = `<i class="fa-solid fa-pen"></i> Modifier`;
+        editBtn.onclick = function() { toggleEditMode(id); };
+        headerContainer.appendChild(editBtn);
+    }
+
     // Met à jour l'URL visible dans le navigateur sans recharger la page
     if (updateHistory) {
         const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?article=' + id;
@@ -217,6 +231,52 @@ function openArticle(id, updateHistory = true) {
     }
 
     toggleReadModal(true);
+}
+
+// --- PASSER EN MODE ÉDITION VISUELLE ---
+function toggleEditMode(id) {
+    const titleElem = document.getElementById('read-title');
+    const contentElem = document.getElementById('read-content');
+    const editBtn = document.getElementById('btn-edit-article');
+
+    titleElem.contentEditable = true;
+    contentElem.contentEditable = true;
+    titleElem.classList.add('border-2', 'border-dashed', 'border-amber-400', 'p-1');
+    contentElem.classList.add('border-2', 'border-dashed', 'border-amber-400', 'p-1');
+    titleElem.focus();
+
+    editBtn.className = "ml-3 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-xs font-bold transition flex items-center gap-1";
+    editBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Enregistrer`;
+    editBtn.onclick = function() { saveArticleEdits(id); };
+}
+
+// --- SAUVEGARDER LES CORRECTIONS DANS SUPABASE ---
+async function saveArticleEdits(id) {
+    const titleElem = document.getElementById('read-title');
+    const contentElem = document.getElementById('read-content');
+    
+    const updatedTitle = titleElem.textContent.trim();
+    const updatedContent = contentElem.textContent.trim();
+
+    try {
+        const { error } = await _supabase
+            .from('articles')
+            .update({ title: updatedTitle, content: updatedContent })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        titleElem.contentEditable = false;
+        contentElem.contentEditable = false;
+        titleElem.classList.remove('border-2', 'border-dashed', 'border-amber-400', 'p-1');
+        contentElem.classList.remove('border-2', 'border-dashed', 'border-amber-400', 'p-1');
+
+        alert("Modifications enregistrées sur Deuce Tennis !");
+        
+        loadArticles(); 
+    } catch (err) {
+        alert("Erreur lors de la modification : " + err.message);
+    }
 }
 
 // --- LOGIQUE DE TRADUCTION DYNAMIQUE AVEC PROXY ANTI-CORS ---

@@ -184,7 +184,7 @@ function openArticle(id) {
     toggleReadModal(true);
 }
 
-// --- LOGIQUE DE TRADUCTION DYNAMIQUE ---
+// --- LOGIQUE DE TRADUCTION DYNAMIQUE AVEC PROXY ANTI-CORS ---
 async function toggleArticleTranslation() {
     const titleElem = document.getElementById('read-title');
     const contentElem = document.getElementById('read-content');
@@ -193,8 +193,12 @@ async function toggleArticleTranslation() {
     if (currentModalLang === 'fr') {
         btnText.textContent = "Translating...";
         try {
-            const resTitle = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=fr&tl=en&dt=t&q=${encodeURIComponent(originalFrenchTitle)}`)}`);
-            const resContent = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=fr&tl=en&dt=t&q=${encodeURIComponent(originalFrenchContent)}`)}`);
+            // Utilisation d'un contournement propre via AllOrigins pour éviter le blocage CORS du navigateur
+            const urlTitle = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=fr&tl=en&dt=t&q=${encodeURIComponent(originalFrenchTitle)}`;
+            const urlContent = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=fr&tl=en&dt=t&q=${encodeURIComponent(originalFrenchContent)}`;
+
+            const resTitle = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(urlTitle)}`);
+            const resContent = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(urlContent)}`);
             
             const dataTitle = await resTitle.json();
             const dataContent = await resContent.json();
@@ -211,7 +215,7 @@ async function toggleArticleTranslation() {
         } catch (err) {
             console.error("Erreur de traduction :", err);
             btnText.textContent = "Translate to EN";
-            alert("Impossible de traduire l'article pour le moment.");
+            alert("Impossible de joindre le service de traduction en local. Réessaie après avoir rafraîchi ou déployé.");
         }
     } else {
         titleElem.textContent = originalFrenchTitle;
@@ -252,7 +256,7 @@ function handleImageUpload(event) {
     reader.readAsDataURL(file);
 }
 
-// --- PUBLICATION DE L'ARTICLE ---
+// --- PUBLICATION DE L'ARTICLE SUR SUPABASE ---
 async function generateArticleCode(event) {
     event.preventDefault();
 
@@ -403,7 +407,7 @@ function toggleLoginModal() {
     if (passInput) passInput.value = "";
 }
 
-// Remplacement global du comportement de fermeture hors du modal
+// Fermeture au clic en dehors du modal de lecture
 document.addEventListener('click', function(e) {
     const readModal = document.getElementById('read-modal');
     if (readModal && !readModal.classList.contains('hidden') && e.target === readModal) {

@@ -27,10 +27,39 @@ async function loadArticles() {
         if (error) throw error;
         articles = data || [];
         renderArticles();
+
+        // --- ROUTAGE INITIAL : Vérifie si un article est demandé dans l'URL ---
+        checkUrlForArticle();
     } catch (err) {
         console.error("Erreur lors de la récupération des articles Supabase :", err);
     }
 }
+
+// --- VERIFICATION DES PARAMETRES D'URL ---
+function checkUrlForArticle() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const articleId = urlParams.get('article');
+    if (articleId) {
+        const idInt = parseInt(articleId, 10);
+        if (!isNaN(idInt)) {
+            // Un court délai permet de s'assurer que le DOM est complètement prêt
+            setTimeout(() => {
+                openArticle(idInt, false); // false pour ne pas ré-écrire l'historique inutilement au chargement
+            }, 100);
+        }
+    }
+}
+
+// Ecoute les boutons "Retour" ou "Avancer" du navigateur pour synchroniser le modal
+window.addEventListener('popstate', function(event) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const articleId = urlParams.get('article');
+    if (articleId) {
+        openArticle(parseInt(articleId, 10), false);
+    } else {
+        toggleReadModal(false);
+    }
+});
 
 // --- RENDU DES CARTES D'ARTICLES ---
 function renderArticles() {
@@ -138,7 +167,7 @@ function removeMoreButton() {
 }
 
 // --- OUVRIR ET LIRE UN ARTICLE COMPLET ---
-function openArticle(id) {
+function openArticle(id, updateHistory = true) {
     const art = articles.find(a => a.id === id);
     if (!art) return;
 
@@ -181,6 +210,12 @@ function openArticle(id) {
     translateBtn.innerHTML = `<i class="fa-solid fa-language text-sm"></i> <span id="translate-btn-text">Translate to EN</span>`;
     translateBtn.onclick = function() { toggleArticleTranslation(); };
 
+    // Met à jour l'URL visible dans le navigateur sans recharger la page
+    if (updateHistory) {
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?article=' + id;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+    }
+
     toggleReadModal(true);
 }
 
@@ -193,7 +228,6 @@ async function toggleArticleTranslation() {
     if (currentModalLang === 'fr') {
         btnText.textContent = "Translating...";
         try {
-            // Utilisation d'un contournement propre via AllOrigins pour éviter le blocage CORS du navigateur
             const urlTitle = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=fr&tl=en&dt=t&q=${encodeURIComponent(originalFrenchTitle)}`;
             const urlContent = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=fr&tl=en&dt=t&q=${encodeURIComponent(originalFrenchContent)}`;
 
@@ -233,6 +267,10 @@ function toggleReadModal(forceOpen = false) {
         modal.classList.remove('hidden');
     } else {
         modal.classList.add('hidden');
+        
+        // Nettoie l'URL quand on ferme le modal pour revenir à l'accueil propre
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.pushState({ path: cleanUrl }, '', cleanUrl);
     }
 }
 

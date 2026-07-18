@@ -9,7 +9,12 @@ let articles = [];
 let currentPage = 'home'; 
 let isAdmin = JSON.parse(localStorage.getItem('deuce_is_admin')) || false;
 let uploadedImageFile = null;
-let showAllHomeArticles = false; // Permet de savoir si l'utilisateur a cliqué sur "Voir plus d'articles"
+let showAllHomeArticles = false; 
+
+// Variables pour la traduction dynamique (sans toucher à la BDD)
+let currentModalLang = 'fr';
+let originalFrenchContent = '';
+let originalFrenchTitle = '';
 
 // --- CHARGEMENT DES ARTICLES DEPUIS SUPABASE ---
 async function loadArticles() {
@@ -33,16 +38,14 @@ function renderArticles() {
     if (!container) return;
     container.innerHTML = '';
 
-    // Gestion du filtrage par onglet
     let filtered = currentPage === 'home' 
         ? articles 
         : articles.filter(art => art.category.toLowerCase() === currentPage);
 
     const totalFilteredCount = filtered.length;
 
-    // --- LOGIQUE DE LIMITATION À 3 ARTICLES SUR L'ACCUEIL ---
     if (currentPage === 'home' && !showAllHomeArticles) {
-        filtered = filtered.slice(0, 3); // Garde uniquement les 3 premiers (les plus récents)
+        filtered = filtered.slice(0, 3); 
     }
 
     const countElem = document.getElementById('article-count');
@@ -61,7 +64,7 @@ function renderArticles() {
 
     filtered.forEach(art => {
         const badgeColor = art.category === 'ATP' ? 'bg-blue-100 text-blue-800' : 
-                            art.category === 'WTA' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800';
+                           art.category === 'WTA' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800';
 
         const deleteButtonHTML = isAdmin ? `
             <button onclick="event.stopPropagation(); deleteArticle(${art.id})" class="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition z-10">
@@ -71,7 +74,6 @@ function renderArticles() {
 
         const card = document.createElement('div');
         card.className = "bg-white rounded-xl shadow-sm hover:shadow-xl border border-slate-100 overflow-hidden transition duration-300 flex flex-col justify-between cursor-pointer relative";
-        
         card.setAttribute('onclick', `openArticle(${art.id})`);
         
         card.innerHTML = `
@@ -101,7 +103,6 @@ function renderArticles() {
         container.appendChild(card);
     });
 
-    // Gestion de l'affichage du bouton "Voir plus"
     if (currentPage === 'home' && totalFilteredCount > 3 && !showAllHomeArticles) {
         createMoreButton();
     } else {
@@ -112,7 +113,7 @@ function renderArticles() {
 // --- AJOUTER LE BOUTON "VOIR PLUS D'ARTICLES" ---
 function createMoreButton() {
     let btn = document.getElementById('btn-load-more');
-    if (btn) return; // Évite les doublons
+    if (btn) return; 
 
     const container = document.getElementById('articles-container');
     if (!container) return;
@@ -141,6 +142,11 @@ function openArticle(id) {
     const art = articles.find(a => a.id === id);
     if (!art) return;
 
+    // Réinitialisation de la langue
+    currentModalLang = 'fr';
+    originalFrenchContent = art.content;
+    originalFrenchTitle = art.title;
+
     document.getElementById('read-image').src = art.image;
     document.getElementById('read-image').alt = art.title;
     document.getElementById('read-title').textContent = art.title;
@@ -150,15 +156,80 @@ function openArticle(id) {
     const badge = document.getElementById('read-category');
     badge.textContent = art.category;
     badge.className = art.category === 'ATP' ? 'font-bold uppercase px-2.5 py-1 rounded shadow bg-blue-100 text-blue-800' : 
-                      art.category === 'WTA' ? 'font-bold uppercase px-2.5 py-1 rounded shadow bg-purple-100 text-purple-800' : 
-                      'font-bold uppercase px-2.5 py-1 rounded shadow bg-amber-100 text-amber-800';
+                  art.category === 'WTA' ? 'font-bold uppercase px-2.5 py-1 rounded shadow bg-purple-100 text-purple-800' : 
+                  'font-bold uppercase px-2.5 py-1 rounded shadow bg-amber-100 text-amber-800';
 
-    toggleReadModal();
+    // Injection de la zone de signature
+    let signatureElem = document.getElementById('read-signature');
+    if (!signatureElem) {
+        signatureElem = document.createElement('div');
+        signatureElem.id = 'read-signature';
+        signatureElem.className = "mt-6 pt-4 border-t border-slate-100 text-xs text-slate-400 font-semibold italic flex items-center gap-1.5";
+        document.getElementById('read-content').after(signatureElem);
+    }
+    signatureElem.innerHTML = `<i class="fa-solid fa-pen-nib text-emerald-600"></i> Rédigé par l'équipe Deuce Tennis`;
+
+    // Injection du bouton de traduction
+    let translateBtn = document.getElementById('btn-translate-article');
+    if (!translateBtn) {
+        const headerContainer = document.getElementById('read-category').parentElement;
+        translateBtn = document.createElement('button');
+        translateBtn.id = 'btn-translate-article';
+        translateBtn.className = "ml-3 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded text-xs font-bold transition flex items-center gap-1";
+        headerContainer.appendChild(translateBtn);
+    }
+    translateBtn.innerHTML = `<i class="fa-solid fa-language text-sm"></i> <span id="translate-btn-text">Translate to EN</span>`;
+    translateBtn.onclick = function() { toggleArticleTranslation(); };
+
+    toggleReadModal(true);
 }
 
-function toggleReadModal() {
+// --- LOGIQUE DE TRADUCTION DYNAMIQUE ---
+async function toggleArticleTranslation() {
+    const titleElem = document.getElementById('read-title');
+    const contentElem = document.getElementById('read-content');
+    const btnText = document.getElementById('translate-btn-text');
+
+    if (currentModalLang === 'fr') {
+        btnText.textContent = "Translating...";
+        try {
+            const resTitle = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=fr&tl=en&dt=t&q=${encodeURIComponent(originalFrenchTitle)}`)}`);
+            const resContent = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=fr&tl=en&dt=t&q=${encodeURIComponent(originalFrenchContent)}`)}`);
+            
+            const dataTitle = await resTitle.json();
+            const dataContent = await resContent.json();
+            
+            const rawTitle = JSON.parse(dataTitle.contents);
+            const rawContent = JSON.parse(dataContent.contents);
+
+            titleElem.textContent = rawTitle[0].map(x => x[0]).join('');
+            contentElem.textContent = rawContent[0].map(x => x[0]).join('');
+            
+            document.getElementById('read-signature').innerHTML = `<i class="fa-solid fa-pen-nib text-emerald-600"></i> Written by the Deuce Tennis team`;
+            btnText.textContent = "Voir en Français";
+            currentModalLang = 'en';
+        } catch (err) {
+            console.error("Erreur de traduction :", err);
+            btnText.textContent = "Translate to EN";
+            alert("Impossible de traduire l'article pour le moment.");
+        }
+    } else {
+        titleElem.textContent = originalFrenchTitle;
+        contentElem.textContent = originalFrenchContent;
+        document.getElementById('read-signature').innerHTML = `<i class="fa-solid fa-pen-nib text-emerald-600"></i> Rédigé par l'équipe Deuce Tennis`;
+        btnText.textContent = "Translate to EN";
+        currentModalLang = 'fr';
+    }
+}
+
+function toggleReadModal(forceOpen = false) {
     const modal = document.getElementById('read-modal');
-    if (modal) modal.classList.toggle('hidden');
+    if (!modal) return;
+    if (forceOpen) {
+        modal.classList.remove('hidden');
+    } else {
+        modal.classList.add('hidden');
+    }
 }
 
 // --- GESTION DE L'IMAGE CHOISIE ---
@@ -181,7 +252,7 @@ function handleImageUpload(event) {
     reader.readAsDataURL(file);
 }
 
-// --- PUBLICATION DE L'ARTICLE SUR SUPABASE ---
+// --- PUBLICATION DE L'ARTICLE ---
 async function generateArticleCode(event) {
     event.preventDefault();
 
@@ -242,7 +313,7 @@ async function generateArticleCode(event) {
     }
 }
 
-// --- SUPPRESSION D'UN ARTICLE SUR SUPABASE ---
+// --- SUPPRESSION D'UN ARTICLE ---
 async function deleteArticle(id) {
     if (!isAdmin) return;
 
@@ -264,8 +335,6 @@ async function deleteArticle(id) {
 // --- NAVIGATION ET FILTRES (ONGLETS) ---
 function navigateTo(page) {
     currentPage = page;
-    
-    // Réinitialise le bouton "Voir plus" quand on change d'onglet
     showAllHomeArticles = false;
 
     const pages = ['home', 'atp', 'wta', 'itf'];
@@ -334,6 +403,14 @@ function toggleLoginModal() {
     if (passInput) passInput.value = "";
 }
 
+// Remplacement global du comportement de fermeture hors du modal
+document.addEventListener('click', function(e) {
+    const readModal = document.getElementById('read-modal');
+    if (readModal && !readModal.classList.contains('hidden') && e.target === readModal) {
+        toggleReadModal(false);
+    }
+});
+
 function loginAdmin(event) {
     event.preventDefault();
     const inputPass = document.getElementById('admin-password').value;
@@ -366,7 +443,6 @@ function applyAuthView() {
     }
 }
 
-// --- OUVERTURE/FERMETURE DES MODALS ---
 function toggleAdminModal() {
     const modal = document.getElementById('admin-modal');
     if (modal) modal.classList.toggle('hidden');

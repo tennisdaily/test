@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z08NHR82GZ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-Z08NHR82GZ');
+    </script>
+    <meta charset="UTF-8">
+    <title>Deuce Actu - Actualités des circuits ATP, WTA et ITF</title>
+    <meta name="description" content="Suivez toute l'actualité brûlante du tennis mondial. Analyses, résultats et portraits sur les circuits ATP, WTA et ITF.">
+    <meta name="robots" content="index, follow">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Deuce Actu",
+      "url": "https://deuceactu.com/",
+      "hasPart": [
+        { "@type": "SiteNavigationElement", "name": "Circuit ATP", "url": "https://deuceactu.com/?page=atp" },
+        { "@type": "SiteNavigationElement", "name": "Circuit WTA", "url": "https://deuceactu.com/?page=wta" },
+        { "@type": "SiteNavigationElement", "name": "Circuit ITF", "url": "https://deuceactu.com/?page=itf" },
+        { "@type": "SiteNavigationElement", "name": "À propos", "url": "https://deuceactu.com/?page=about" }
+      ]
+    }
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7920113065336169" crossorigin="anonymous"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <nav class="bg-emerald-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 flex justify-between items-center h-16">
+            <div class="flex items-center space-x-2 cursor-pointer" onclick="navigateTo('home')">
+                <i class="fa-solid fa-tennis-ball text-yellow-300 text-2xl animate-bounce"></i>
+                <span class="font-bold text-xl tracking-wider">DEUCE <span class="text-yellow-300">ACTU</span></span>
+            </div>
+            
+            <div class="hidden md:flex space-x-1 text-sm font-semibold">
+                <button onclick="navigateTo('home')" id="nav-home" class="px-4 py-2 rounded-md bg-emerald-800 text-white transition">Accueil</button>
+                <button onclick="navigateTo('atp')" id="nav-atp" class="px-4 py-2 rounded-md hover:bg-emerald-600 transition">Circuit ATP</button>
+                <button onclick="navigateTo('wta')" id="nav-wta" class="px-4 py-2 rounded-md hover:bg-emerald-600 transition">Circuit WTA</button>
+                <button onclick="navigateTo('itf')" id="nav-itf" class="px-4 py-2 rounded-md hover:bg-emerald-600 transition">Circuit ITF</button>
+                <button onclick="navigateTo('about')" id="nav-about" class="px-4 py-2 rounded-md hover:bg-emerald-600 transition">À propos</button>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button id="btn-write" onclick="toggleAdminModal()" class="hidden bg-yellow-400 hover:bg-yellow-300 text-emerald-950 px-4 py-2 rounded-full font-bold text-xs flex items-center space-x-1 shadow transition">
+                    <i class="fa-solid fa-pen"></i>
+                    <span>RÉDIGER</span>
+                </button>
+                
+                <button id="btn-login-toggle" onclick="handleAuthAction()" class="bg-emerald-800 hover:bg-emerald-900 border border-emerald-500 px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-lock" id="auth-icon"></i>
+                    <span id="auth-text">Admin</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <header class="bg-gradient-to-r from-emerald-800 to-teal-900 text-white py-12 text-center transition-all duration-300" id="main-header">
+        <h1 class="text-3xl md:text-5xl font-black mb-2 tracking-wide" id="header-title">DEUCE ACTU</h1>
+        <p class="text-emerald-200 text-sm md:text-base" id="header-desc">L'actualité brûlante des circuits ATP, WTA et ITF</p>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full">
+        <div class="flex justify-between items-center mb-8 border-b pb-4">
+            <h2 id="section-title" class="text-2xl font-bold text-emerald-900">Tous les articles</h2>
+            <span class="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-semibold" id="article-count">0 article(s)</span>
+        </div>
+
+        <div id="articles-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </div>
+
+        <div id="about-content" class="hidden max-w-2xl mx-auto bg-white rounded-xl shadow-sm border border-slate-100 p-8 text-slate-600 leading-relaxed">
+            <p class="mb-4">Deuce Actu est un site indépendant dédié à l'actualité du tennis mondial. Notre objectif : suivre au plus près les circuits ATP, WTA et ITF, avec des analyses, des résultats et des portraits de joueurs.</p>
+            <p>Une question, une remarque ? Utilisez le formulaire de contact en bas de page, nous vous répondrons avec plaisir.</p>
+        </div>
+    </main>
+
+    <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden">
+            <div class="bg-emerald-800 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold"><i class="fa-solid fa-shield-halved mr-2 text-yellow-300"></i>Connexion Admin</h3>
+                <button onclick="toggleLoginModal()" class="text-white hover:text-yellow-300"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="loginAdmin(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Adresse Email</label>
+                    <input type="email" id="admin-email" placeholder="admin@deucetennis.com" class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500 text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Mot de passe</label>
+                    <input type="password" id="admin-password" placeholder="••••••••" class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500 text-sm" required>
+                    <p id="login-error" class="text-red-500 text-xs mt-1 hidden font-semibold">Identifiants incorrects !</p>
+                </div>
+                <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-2.5 rounded-lg font-bold text-sm transition shadow-md">
+                    Se connecter
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div class="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-feather-pointed mr-2"></i>Rédiger une actualité</h3>
+                <button onclick="toggleAdminModal()" class="text-white hover:text-yellow-300 text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <form id="article-form" onsubmit="generateArticleCode(event)" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Catégorie</label>
+                    <select id="article-category" class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                        <option value="ATP">ATP (Circuit Homme)</option>
+                        <option value="WTA">WTA (Circuit Femme)</option>
+                        <option value="ITF">ITF (Circuit Secondaire)</option>
+                        
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Titre de l'article</label>
+                    <input type="text" id="article-title" placeholder="Titre..." class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Sélectionner une photo</label>
+                    <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center cursor-pointer hover:bg-slate-50 transition relative">
+                        <input type="file" id="article-image-file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleImageUpload(event)" required>
+                        <div id="upload-placeholder">
+                            <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-2xl mb-1"></i>
+                            <p class="text-xs text-slate-500">Cliquez pour choisir une photo</p>
+                        </div>
+                        <img id="image-preview" class="hidden max-h-24 mx-auto rounded mt-1 shadow-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Contenu de l'article</label>
+                    <textarea id="article-content" rows="4" placeholder="Écrivez votre texte ici..." class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none text-sm" required></textarea>
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" onclick="toggleAdminModal()" class="w-1/2 border border-slate-300 hover:bg-slate-100 py-2.5 rounded-lg font-semibold text-sm transition">Annuler</button>
+                    <button type="submit" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-semibold text-sm transition">Publier l'article</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="read-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="relative h-64 bg-slate-100 shrink-0">
+                <img id="read-image" src="" alt="" class="w-full h-full object-cover">
+                <button onclick="toggleReadModal()" class="absolute top-4 right-4 bg-black bg-opacity-50 hover:bg-opacity-80 text-white w-10 h-10 rounded-full flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4">
+                <div class="flex justify-between items-center text-xs">
+                    <span id="read-category" class="font-bold uppercase px-2.5 py-1 rounded shadow"></span>
+                    <span id="read-date" class="text-slate-400 font-semibold"></span>
+                </div>
+                <h3 id="read-title" class="font-black text-2xl text-slate-800 leading-tight"></h3>
+                <hr class="border-slate-100">
+                <p id="read-content" class="text-slate-600 leading-relaxed text-sm whitespace-pre-line"></p>
+            </div>
+        </div>
+    </div>
+<section class="max-w-xl mx-auto px-4 py-12 w-full border-t border-slate-200 mt-12">
+    <h2 class="text-2xl font-bold text-emerald-900 mb-6 text-center"><i class="fa-solid fa-envelope mr-2"></i>Nous contacter</h2>
+    
+    <form id="contact-form" onsubmit="sendContactMessage(event)" class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 space-y-4">
+        <div>
+            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Votre Nom / Pseudo</label>
+            <input type="text" id="contact-name" placeholder="Ex: Radek" class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500 text-sm" required>
+        </div>
+        <div>
+            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Votre Adresse Email</label>
+            <input type="email" id="contact-email" placeholder="nom@exemple.com" class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500 text-sm" required>
+        </div>
+        <div>
+            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Votre Message</label>
+            <textarea id="contact-message" rows="4" placeholder="Votre message..." class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500 text-sm" required></textarea>
+        </div>
+        <button type="submit" class="w-full bg-emerald-800 hover:bg-emerald-950 text-white py-2.5 rounded-lg font-bold text-sm transition shadow-md">
+            Envoyer le message
+        </button>
+    </form>
+</section>
+    <footer class="bg-slate-900 text-slate-400 py-6 text-center text-xs border-t border-slate-800">
+        <p>&copy; 2026 Deuce Actu. Tous droits réservés.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

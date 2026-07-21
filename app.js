@@ -440,6 +440,7 @@ function navigateTo(page) {
         headerTitle.textContent = "À PROPOS";
         headerDesc.textContent = "Qui sommes-nous ?";
         sectionTitle.textContent = "À propos de Deuce Actu";
+        removeMoreButton();
         return;
     } else if (page === 'home') {
         headerElement.className = "bg-gradient-to-r from-emerald-800 to-teal-900 text-white py-12 text-center transition-all duration-300";
